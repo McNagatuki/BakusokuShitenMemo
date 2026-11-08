@@ -1,0 +1,844 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>爆速視点メモ</title>
+<style>
+:root {
+  --bg: #f6f5f2; --panel: #ffffff; --ink: #1d1d1f; --muted: #6b6b70; --line: #e2e0db;
+  --accent: #c2410c; --speech: #2f6fdf; --speech-soft: #dbe6fb; --silence: #d9d6cf;
+  --memo: #e0a100; --hit: #fff1b8; --cur: #eef3fd;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161618; --panel: #202023; --ink: #ececee; --muted: #9a9aa2; --line: #34343a;
+    --accent: #fb923c; --speech: #6b9cff; --speech-soft: #23324f; --silence: #3a3a40;
+    --memo: #f5c542; --hit: #4a4020; --cur: #252d3d;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #161618; --panel: #202023; --ink: #ececee; --muted: #9a9aa2; --line: #34343a;
+  --accent: #fb923c; --speech: #6b9cff; --speech-soft: #23324f; --silence: #3a3a40;
+  --memo: #f5c542; --hit: #4a4020; --cur: #252d3d;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--ink); font: 14px/1.5 "Segoe UI", "Hiragino Sans", "Yu Gothic UI", "Meiryo", sans-serif; }
+button, select, input { font: inherit; color: inherit; }
+button { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+button:hover { border-color: var(--muted); }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+select, input[type=number], input[type=search], input[type=text] { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; }
+input[type=number] { width: 4.5em; }
+.app { display: grid; grid-template-columns: minmax(0, 1fr) 400px; grid-template-rows: auto minmax(0, 1fr); height: 100vh; }
+header { grid-column: 1 / -1; display: flex; gap: 12px; align-items: center; padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--panel); flex-wrap: wrap; }
+header h1 { font-size: 15px; margin: 0 8px 0 0; }
+header .files { color: var(--muted); font-size: 12px; flex: 1; min-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+main { display: flex; flex-direction: column; min-height: 0; padding: 12px 16px; gap: 10px; }
+.stage { position: relative; flex: 1; min-height: 200px; background: #000; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+video { width: 100%; height: 100%; object-fit: contain; }
+.badge { position: absolute; top: 10px; left: 10px; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; color: #fff; background: rgba(0,0,0,.6); }
+.badge.speech { background: var(--speech); }
+.badge.silence { background: #6b6b70; }
+.empty { color: #bbb; text-align: center; padding: 24px; line-height: 1.9; }
+.empty b { color: #fff; }
+.timeline { position: relative; height: 64px; cursor: pointer; border-radius: 6px; overflow: hidden; background: var(--silence); touch-action: none; }
+.timeline canvas { width: 100%; height: 100%; display: block; }
+.ph { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--ink); pointer-events: none; left: 0; }
+.tip { position: absolute; top: -26px; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 1px 6px; border-radius: 4px; font-size: 12px; pointer-events: none; display: none; white-space: nowrap; }
+.tlwrap { position: relative; }
+.nav { position: relative; height: 12px; margin-top: 4px; background: var(--line); border-radius: 6px; cursor: pointer; touch-action: none; }
+.nav .thumb { position: absolute; top: 0; bottom: 0; min-width: 16px; background: var(--muted); opacity: .55; border-radius: 6px; cursor: grab; }
+.nav .thumb:hover, .nav .thumb.drag { opacity: .8; }
+.nav .h { position: absolute; top: 0; bottom: 0; width: 7px; cursor: ew-resize; }
+.nav .h.l { left: 0; } .nav .h.r { right: 0; }
+.nav .navph { position: absolute; top: -2px; bottom: -2px; width: 2px; margin-left: -1px; background: var(--ink); pointer-events: none; }
+.zbtn { min-width: 30px; padding: 2px 8px; }
+.controls { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.controls .group { display: flex; gap: 6px; align-items: center; }
+.controls label { color: var(--muted); font-size: 12px; }
+.time { font-variant-numeric: tabular-nums; font-size: 15px; min-width: 150px; }
+.stats { color: var(--muted); font-size: 12px; }
+details.adv { font-size: 12px; color: var(--muted); }
+details.adv .row { display: flex; gap: 12px; flex-wrap: wrap; padding-top: 6px; align-items: center; }
+aside { display: grid; grid-template-rows: minmax(0, 1.3fr) minmax(0, 1fr); border-left: 1px solid var(--line); background: var(--panel); min-height: 0; }
+section.pane { display: flex; flex-direction: column; min-height: 0; border-bottom: 1px solid var(--line); }
+.pane h2 { font-size: 13px; margin: 0; padding: 8px 12px 4px; display: flex; gap: 8px; align-items: center; }
+.pane h2 .sp { flex: 1; }
+.pane .bar { display: flex; gap: 6px; padding: 4px 12px 8px; align-items: center; flex-wrap: wrap; }
+.pane .bar input[type=search] { flex: 1; min-width: 120px; }
+.list { overflow-y: auto; flex: 1; min-height: 0; }
+.srow { display: flex; gap: 8px; padding: 4px 12px; cursor: pointer; border-top: 1px solid transparent; }
+.srow:hover { background: var(--speech-soft); }
+.srow.cur { background: var(--cur); box-shadow: inset 3px 0 0 var(--speech); }
+.srow .t { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 12px; padding-top: 1px; min-width: 52px; }
+.srow mark { background: var(--hit); color: inherit; border-radius: 2px; }
+.mrow { display: grid; grid-template-columns: auto 1fr auto; gap: 6px; padding: 4px 12px; align-items: center; }
+.mrow .jump { font-variant-numeric: tabular-nums; padding: 2px 8px; }
+.mrow input { width: 100%; }
+.mrow .del { padding: 2px 8px; color: var(--muted); }
+.hint { color: var(--muted); font-size: 12px; padding: 8px 12px; }
+.drop { position: fixed; inset: 0; background: rgba(47,111,223,.18); border: 3px dashed var(--speech); display: none; align-items: center; justify-content: center; font-size: 20px; font-weight: 600; z-index: 10; pointer-events: none; }
+.drop.on { display: flex; }
+.help { position: fixed; right: 16px; bottom: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; box-shadow: 0 6px 24px rgba(0,0,0,.2); display: none; z-index: 5; font-size: 13px; }
+.help.on { display: block; }
+.help table td { padding: 1px 8px; }
+.help kbd { background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; font-size: 12px; }
+.msg { color: var(--accent); font-size: 12px; }
+@media (max-width: 900px) {
+  .app { grid-template-columns: 1fr; grid-template-rows: auto auto auto; height: auto; }
+  aside { border-left: 0; grid-template-rows: 360px 300px; }
+  .stage { min-height: 220px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>爆速視点メモ</h1>
+    <button class="primary" id="btnVideo">動画を選ぶ</button>
+    <button id="btnFolder">作業フォルダを選ぶ</button>
+    <input type="file" id="inVideo" accept="video/*,.mkv" hidden>
+    <input type="file" id="inFolder" webkitdirectory hidden>
+    <span class="files" id="files">動画と「&lt;動画名&gt;_edit」フォルダを、この画面にまとめてドラッグしても読み込めます</span>
+    <button id="btnHelp" title="キー操作 (?)">キー操作</button>
+  </header>
+
+  <main>
+    <div class="stage" id="stage">
+      <video id="video" preload="auto"></video>
+      <audio id="audio" preload="auto"></audio>
+      <div class="badge" id="badge" hidden></div>
+      <div class="empty" id="empty">
+        <b>動画</b>と、「1) 準備」でできた<b>作業フォルダ</b>（&lt;動画名&gt;_edit）を読み込んでください。<br>
+        どちらもドラッグ＆ドロップで読み込めます。
+      </div>
+    </div>
+
+    <div class="tlwrap">
+      <div class="tip" id="tip"></div>
+      <div class="timeline" id="timeline" title="Ctrl（または Alt）+ホイールで拡大・縮小、ホイールで左右に移動"><canvas id="tl"></canvas><div class="ph" id="ph"></div></div>
+      <div class="nav" id="nav" title="つまみをドラッグで移動、両端をドラッグで拡大・縮小、ダブルクリックで全体"><div class="thumb" id="thumb"><div class="h l"></div><div class="h r"></div></div><div class="navph" id="navph"></div></div>
+    </div>
+
+    <div class="controls">
+      <div class="group">
+        <button id="btnPlay" style="min-width:64px">再生</button>
+        <span class="time" id="time">0:00:00 / 0:00:00</span>
+      </div>
+      <div class="group">
+        <label for="speechRate">発話</label>
+        <select id="speechRate">
+          <option value="0.75">0.75倍</option><option value="1">1倍</option><option value="1.25">1.25倍</option>
+          <option value="1.5">1.5倍</option><option value="1.75">1.75倍</option><option value="2">2倍</option>
+          <option value="2.5">2.5倍</option><option value="3">3倍</option>
+        </select>
+      </div>
+      <div class="group">
+        <label for="silenceMode">無音</label>
+        <select id="silenceMode">
+          <option value="skip">飛ばす</option><option value="1">1倍</option><option value="2">2倍</option>
+          <option value="3">3倍</option><option value="4">4倍</option><option value="6">6倍</option>
+          <option value="8">8倍</option><option value="16">16倍</option>
+        </select>
+      </div>
+      <div class="group">
+        <label for="volume">音量</label>
+        <input type="range" id="volume" min="0" max="1" step="0.05" value="1" style="width:90px">
+      </div>
+      <div class="group">
+        <label>表示</label>
+        <button class="zbtn" id="zOut" title="縮小（-）">−</button>
+        <button class="zbtn" id="zIn" title="拡大（+）">＋</button>
+        <button class="zbtn" id="zFit" title="全体を表示（\）">全体</button>
+        <span class="stats" id="zspan"></span>
+      </div>
+      <span class="stats" id="stats"></span>
+    </div>
+
+    <details class="adv">
+      <summary>区間の決め方</summary>
+      <div class="row">
+        <label>発話の前の余白 <input type="number" id="pre" step="0.05" min="0"> 秒</label>
+        <label>発話の後の余白 <input type="number" id="post" step="0.05" min="0"> 秒</label>
+        <label>この長さ未満の無音は発話に含める <input type="number" id="silenceMin" step="0.1" min="0"> 秒</label>
+        <label>メモの時刻を <input type="number" id="memoBack" step="0.5" min="0"> 秒戻す</label>
+        <button id="btnReset">初期値に戻す</button>
+      </div>
+    </details>
+  </main>
+
+  <aside>
+    <section class="pane">
+      <h2>文字起こし <span class="sp"></span>
+        <label style="font-weight:400;color:var(--muted);font-size:12px"><input type="checkbox" id="follow" checked> 再生位置に追従</label>
+      </h2>
+      <div class="bar">
+        <input type="search" id="search" placeholder="文字で探す（/）">
+        <span class="stats" id="hits"></span>
+      </div>
+      <div class="list" id="slist"><div class="hint">作業フォルダを読み込むと表示されます</div></div>
+    </section>
+    <section class="pane">
+      <h2>メモ <span class="stats" id="mcount"></span><span class="sp"></span>
+        <button id="btnAddMemo" title="M">追加</button>
+      </h2>
+      <div class="bar">
+        <button id="btnSave">テキストで保存</button>
+        <button id="btnCopy">コピー</button>
+        <button id="btnLoadMemo">読み込み</button>
+        <button id="btnClear">全部消す</button>
+        <input type="file" id="inMemo" accept=".txt,text/plain" hidden>
+        <span class="msg" id="mmsg"></span>
+      </div>
+      <div class="list" id="mlist"><div class="hint">再生中に M キーで、その場面にメモを付けられます</div></div>
+    </section>
+  </aside>
+</div>
+
+<div class="drop" id="drop">ここに離すと読み込みます</div>
+<div class="help" id="help">
+  <table>
+    <tr><td><kbd>Space</kbd></td><td>再生 / 一時停止</td></tr>
+    <tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>5秒戻る / 進む</td></tr>
+    <tr><td><kbd>Shift</kbd>+<kbd>←</kbd> <kbd>→</kbd></td><td>前 / 次の発話へ</td></tr>
+    <tr><td><kbd>↑</kbd> <kbd>↓</kbd></td><td>発話の速度を上げる / 下げる</td></tr>
+    <tr><td><kbd>S</kbd></td><td>無音の扱いを切り替える</td></tr>
+    <tr><td><kbd>M</kbd></td><td>メモを追加（入力後 Enter）</td></tr>
+    <tr><td><kbd>/</kbd></td><td>文字起こしを検索</td></tr>
+    <tr><td><kbd>+</kbd> <kbd>-</kbd></td><td>タイムラインを拡大 / 縮小</td></tr>
+    <tr><td><kbd>\</kbd></td><td>タイムラインに全体を表示</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+ホイール</td><td>マウスの位置を中心に拡大 / 縮小（Alt+ホイールも可）</td></tr>
+    <tr><td>ホイール</td><td>タイムラインを左右に移動</td></tr>
+    <tr><td><kbd>?</kbd></td><td>この表示を開く / 閉じる</td></tr>
+  </table>
+</div>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const video = $("video"), audio = $("audio");
+const DEF = { speechRate: 1, silenceMode: "skip", pre: 0.15, post: 0.25, silenceMin: 1.5, memoBack: 2, follow: true, volume: 1 };
+const S = {
+  set: { ...DEF }, videoName: null, data: null, audioUrl: null, videoUrl: null,
+  sents: [], regions: [], memos: [], override: -1, lastSent: -1, query: "", memoKey: null,
+};
+
+// ---------- 保存（このブラウザだけ。失敗しても動く） ----------
+function store(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {} }
+function load(key) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
+
+// ---------- 時刻 ----------
+function fmt(t) {
+  t = Math.max(0, t || 0);
+  const h = Math.floor(t / 3600), m = Math.floor(t / 60) % 60, s = Math.floor(t % 60);
+  return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+function parseTime(str) {
+  const p = str.split(":").map(Number);
+  if (p.some(isNaN)) return null;
+  return p.reduce((a, b) => a * 60 + b, 0);
+}
+
+// ---------- 読み込み ----------
+// ファイルはブラウザが渡す dt.files をそのまま使う（file:// で開いたページでも確実に読める）。
+// フォルダの中身は FileSystem API でたどるが、file:// では読めないブラウザがあるので、失敗を記録しておく。
+async function filesFromDrop(dt) {
+  const direct = [...dt.files];  // await より前に取り出す（イベントが終わると空になる）
+  const entries = [...dt.items].map((it) => it.webkitGetAsEntry && it.webkitGetAsEntry()).filter(Boolean);
+  const dirs = entries.filter((e) => e.isDirectory);
+  const out = direct.filter((f) => !dirs.some((d) => d.name === f.name));
+  let dirFailed = false;
+  const walk = (entry) => new Promise((resolve) => {
+    if (entry.isFile) entry.file((f) => { out.push(f); resolve(); }, () => { dirFailed = true; resolve(); });
+    else if (entry.isDirectory) {
+      const r = entry.createReader(), all = [];
+      const read = () => r.readEntries(async (es) => {
+        if (!es.length) { for (const e of all) await walk(e); resolve(); }
+        else { all.push(...es); read(); }
+      }, () => { dirFailed = true; resolve(); });
+      read();
+    } else resolve();
+  });
+  for (const d of dirs) await walk(d);
+  return { files: out, dirFailed: dirFailed && dirs.length > 0 };
+}
+
+async function ingest(files, dirFailed = false) {
+  let vid = null, data = null, aud = null;
+  for (const f of files) {
+    const n = f.name.toLowerCase();
+    if (n === "viewer_data.json") data = f;
+    else if (n === "viewer_audio.m4a") aud = f;
+    else if (/\.(mp4|mov|mkv|webm|m4v)$/.test(n) && !n.startsWith("viewer_")) vid = f;
+  }
+  if (data) {
+    try { S.data = JSON.parse(await data.text()); }
+    catch (e) { alert("viewer_data.json を読めませんでした。"); return; }
+    if (S.audioUrl) URL.revokeObjectURL(S.audioUrl);
+    S.audioUrl = aud ? URL.createObjectURL(aud) : null;
+    if (S.data.audio && !aud) alert("作業フォルダに viewer_audio.m4a が見つかりません。動画の1本目の音声で再生します。");
+    S.sents = S.data.sentences || [];
+  }
+  if (vid) {
+    if (S.videoUrl) URL.revokeObjectURL(S.videoUrl);
+    S.videoName = vid.name;
+    S.videoUrl = URL.createObjectURL(vid);
+  }
+  const folderMsg = "このブラウザでは、フォルダをドラッグして中身を読めませんでした。\n" +
+    "「作業フォルダを選ぶ」ボタンを使うか、フォルダの中の viewer_data.json と viewer_audio.m4a をドラッグしてください。";
+  if (!vid && !data) { alert(dirFailed ? folderMsg : "動画か、作業フォルダ（viewer_data.json が入ったフォルダ）を読み込んでください。"); return; }
+  setup();
+  if (dirFailed && !data && !S.data) alert("動画は読み込みました。\n" + folderMsg);
+}
+
+function setup() {
+  const names = [];
+  if (S.videoName) names.push(S.videoName);
+  if (S.data) names.push(`文字起こし ${S.sents.length} 文` + (S.audioUrl ? "・音声あり" : ""));
+  $("files").textContent = names.join(" ／ ") || "";
+  if (S.data && S.videoName && S.data.source && S.data.source !== S.videoName) {
+    $("files").textContent += `　※作業フォルダは「${S.data.source}」のものです`;
+  }
+  if (S.videoUrl && video.src !== S.videoUrl) { video.src = S.videoUrl; }
+  if (S.audioUrl) { if (audio.src !== S.audioUrl) audio.src = S.audioUrl; video.muted = true; }
+  else { audio.removeAttribute("src"); audio.load(); video.muted = false; }
+  $("empty").hidden = !!S.videoUrl;
+  if (S.videoName && S.data) {
+    S.memoKey = `memo:${S.videoName}`;
+    S.memos = load(S.memoKey) || [];
+  }
+  rebuild();
+  renderSents();
+  renderMemos();
+}
+
+// ---------- 区間 ----------
+function duration() { return (isFinite(video.duration) && video.duration) || (S.data && S.data.duration) || 0; }
+
+function rebuild() {
+  const dur = duration(), { pre, post, silenceMin } = S.set;
+  const iv = [];
+  for (const s of S.sents) {
+    const a = Math.max(0, s.start - pre), b = Math.min(dur || Infinity, s.end + post);
+    const last = iv[iv.length - 1];
+    if (last && a - last[1] < silenceMin) last[1] = Math.max(last[1], b);
+    else iv.push([a, b]);
+  }
+  if (iv.length && iv[0][0] < silenceMin) iv[0][0] = 0;
+  if (iv.length && dur && dur - iv[iv.length - 1][1] < silenceMin) iv[iv.length - 1][1] = dur;
+  const R = [];
+  let cur = 0;
+  for (const [a, b] of iv) {
+    if (a > cur) R.push({ s: cur, e: a, sp: false });
+    R.push({ s: a, e: b, sp: true });
+    cur = b;
+  }
+  if (dur && cur < dur) R.push({ s: cur, e: dur, sp: false });
+  S.regions = R;
+  S.override = -1;
+  updateStats();
+  drawTimeline();
+}
+
+function regionAt(t) {
+  const R = S.regions;
+  let lo = 0, hi = R.length - 1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (t < R[mid].s) hi = mid - 1;
+    else if (t >= R[mid].e) lo = mid + 1;
+    else return mid;
+  }
+  return -1;
+}
+
+function sentAt(t) {
+  const A = S.sents;
+  let lo = 0, hi = A.length - 1, ans = -1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (A[mid].start <= t) { ans = mid; lo = mid + 1; } else hi = mid - 1;
+  }
+  return ans;
+}
+
+function updateStats() {
+  let sp = 0, si = 0;
+  for (const r of S.regions) (r.sp ? (sp += r.e - r.s) : (si += r.e - r.s));
+  if (!S.regions.length) { $("stats").textContent = ""; return; }
+  const m = S.set.silenceMode, rate = S.set.speechRate;
+  const view = sp / rate + (m === "skip" ? 0 : si / Number(m));
+  $("stats").textContent = `発話 ${fmt(sp)} ／ 無音 ${fmt(si)} → この設定で見ると約 ${fmt(view)}`;
+}
+
+// ---------- 再生の制御 ----------
+function setRate(r) {
+  if (Math.abs(video.playbackRate - r) > 1e-6) video.playbackRate = r;
+  if (S.audioUrl && Math.abs(audio.playbackRate - r) > 1e-6) audio.playbackRate = r;
+}
+
+function userSeek(t) {
+  t = Math.max(0, Math.min(duration(), t));
+  video.currentTime = t;
+  const i = regionAt(t);
+  S.override = i >= 0 && !S.regions[i].sp ? i : -1;  // 自分で無音の中に移動したときは飛ばさない
+  if (S.audioUrl) audio.currentTime = t;
+}
+
+function tick() {
+  if (S.videoUrl && S.regions.length && !video.seeking) {
+    const t = video.currentTime, i = regionAt(t), r = S.regions[i];
+    if (S.override !== -1 && i !== S.override) S.override = -1;
+    if (r && !r.sp && i !== S.override && !video.paused) {
+      if (S.set.silenceMode === "skip") {
+        const nx = S.regions[i + 1];
+        if (nx) { video.currentTime = nx.s; if (S.audioUrl) audio.currentTime = nx.s; }
+        else video.pause();
+      } else setRate(Number(S.set.silenceMode));
+    } else setRate(S.set.speechRate);
+  }
+  if (S.audioUrl) {
+    if (video.paused !== audio.paused) (video.paused ? audio.pause() : audio.play().catch(() => {}));
+    if (!video.seeking && Math.abs(audio.currentTime - video.currentTime) > 0.25) audio.currentTime = video.currentTime;
+  }
+  updateUI();
+}
+setInterval(tick, 40);
+
+function updateUI() {
+  const t = video.currentTime, dur = duration();
+  $("time").textContent = `${fmt(t)} / ${fmt(dur)}`;
+  $("btnPlay").textContent = video.paused ? "再生" : "一時停止";
+  const i = regionAt(t), b = $("badge");
+  if (i >= 0 && S.sents.length) {
+    const sp = S.regions[i].sp;
+    b.hidden = false;
+    b.className = "badge " + (sp ? "speech" : "silence");
+    const m = S.set.silenceMode;
+    b.textContent = sp ? `発話 ${S.set.speechRate}倍`
+      : (i === S.override ? `無音（ここに移動したので飛ばさず再生）` : (m === "skip" ? "無音" : `無音 ${m}倍`));
+  } else b.hidden = true;
+  if (!followPlayhead()) drawPlayhead();
+  const si = sentAt(t);
+  if (si !== S.lastSent) {
+    const old = document.querySelector(".srow.cur");
+    if (old) old.classList.remove("cur");
+    const row = document.querySelector(`.srow[data-i="${si}"]`);
+    if (row) {
+      row.classList.add("cur");
+      if (S.set.follow && !S.query) row.scrollIntoView({ block: "center", behavior: "auto" });
+    }
+    S.lastSent = si;
+  }
+}
+
+// ---------- タイムライン（Premiere のように時間方向に拡大できる） ----------
+// V.start: 表示の左端の時刻、V.span: 表示している長さ（0 なら全体）
+const tl = $("tl"), tlBox = $("timeline"), nav = $("nav"), thumb = $("thumb");
+const V = { start: 0, span: 0 };
+const MIN_SPAN = 5, RULER = 18;
+const TICKS = [0.1, 0.2, 0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600, 7200];
+function viewSpan() { const d = duration(); return V.span > 0 ? Math.min(V.span, d) : d; }
+function clampView() {
+  const d = duration();
+  if (!d) { V.start = 0; V.span = 0; return; }
+  let sp = V.span > 0 ? Math.max(MIN_SPAN, Math.min(V.span, d)) : d;
+  V.span = sp >= d - 1e-6 ? 0 : sp;
+  sp = viewSpan();
+  V.start = Math.max(0, Math.min(V.start, d - sp));
+  if (!V.span) V.start = 0;
+}
+function tToX(t, w) { return ((t - V.start) / (viewSpan() || 1)) * w; }
+function xToT(x, w) { return V.start + (x / w) * viewSpan(); }
+function fmtTick(t, step) {
+  t = Math.max(0, t);
+  const h = Math.floor(t / 3600), m = Math.floor(t / 60) % 60, s = Math.floor(t % 60);
+  let str = h ? `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}` : `${m}:${String(s).padStart(2, "0")}`;
+  if (step < 1) str += "." + Math.floor((t % 1) * 10 + 1e-6);
+  return str;
+}
+function fmtSpan(sp) {
+  if (sp < 120) return `${Math.round(sp)}秒`;
+  if (sp < 3600) return `${Math.round(sp / 60)}分`;
+  return `${(sp / 3600).toFixed(1)}時間`;
+}
+
+function drawTimeline() {
+  clampView();
+  const dpr = window.devicePixelRatio || 1, w = tlBox.clientWidth, h = tlBox.clientHeight;
+  tl.width = Math.round(w * dpr); tl.height = Math.round(h * dpr);
+  const c = tl.getContext("2d"), dur = duration(), sp = viewSpan();
+  const css = getComputedStyle(document.documentElement), col = (k) => css.getPropertyValue(k).trim();
+  c.scale(dpr, dpr);
+  c.fillStyle = col("--panel"); c.fillRect(0, 0, w, RULER);
+  c.fillStyle = col("--silence"); c.fillRect(0, RULER, w, h - RULER);
+  if (dur && sp) {
+    const t0 = V.start, t1 = V.start + sp, top = RULER + 5, bh = h - RULER - 10;
+    // 発話区間
+    c.fillStyle = col("--speech");
+    for (const r of S.regions) {
+      if (!r.sp || r.e < t0 || r.s > t1) continue;
+      const x1 = tToX(r.s, w), x2 = tToX(r.e, w);
+      c.fillRect(x1, top, Math.max(1, x2 - x1), bh);
+    }
+    // 拡大しているときは、文の切れ目と本文を表示する
+    if (sp <= 900) {
+      c.save();
+      c.font = '12px "Segoe UI", "Yu Gothic UI", "Meiryo", sans-serif';
+      c.textBaseline = "middle";
+      for (const s of S.sents) {
+        if (s.end < t0 || s.start > t1) continue;
+        const x1 = tToX(s.start, w), x2 = tToX(s.end, w);
+        c.fillStyle = "rgba(255,255,255,.55)";
+        c.fillRect(x1, top, 1, bh);
+        if (x2 - x1 > 28) {
+          c.save();
+          c.beginPath(); c.rect(Math.max(0, x1 + 3), top, Math.min(w, x2) - Math.max(0, x1 + 3) - 2, bh); c.clip();
+          c.fillStyle = "#fff";
+          c.fillText(s.text, Math.max(x1 + 4, 4), top + bh / 2);
+          c.restore();
+        }
+      }
+      c.restore();
+    }
+    // メモ
+    c.fillStyle = col("--memo");
+    for (const m of S.memos) if (m.t >= t0 && m.t <= t1) c.fillRect(tToX(m.t, w) - 1, RULER, 2, h - RULER);
+    // 目盛り
+    const pps = w / sp;
+    const step = TICKS.find((x) => x * pps >= 80) || TICKS[TICKS.length - 1], minor = step / 5;
+    c.fillStyle = col("--muted"); c.font = '11px "Segoe UI", "Yu Gothic UI", sans-serif'; c.textBaseline = "alphabetic";
+    for (let t = Math.floor(t0 / minor) * minor; t <= t1; t += minor) {
+      const x = Math.round(tToX(t, w)) + 0.5;
+      const major = Math.abs(t / step - Math.round(t / step)) < 1e-6;
+      c.fillRect(x - 0.5, major ? RULER - 8 : RULER - 4, 1, major ? 8 : 4);
+      if (major && x + 40 < w + 30) c.fillText(fmtTick(t, step), x + 3, 11);
+    }
+    c.fillStyle = col("--line"); c.fillRect(0, RULER - 1, w, 1);
+  }
+  updateNav();
+  drawPlayhead();
+}
+
+function updateNav() {
+  const d = duration(), sp = viewSpan();
+  thumb.style.left = d ? `${(V.start / d) * 100}%` : "0";
+  thumb.style.width = d ? `${(sp / d) * 100}%` : "100%";
+  $("zspan").textContent = d ? (V.span ? `${fmtSpan(sp)}幅` : "全体") : "";
+}
+function drawPlayhead() {
+  const d = duration(), t = video.currentTime, sp = viewSpan();
+  const inView = d && t >= V.start && t <= V.start + sp;
+  $("ph").style.display = inView ? "block" : "none";
+  if (inView) $("ph").style.left = `${((t - V.start) / sp) * 100}%`;
+  $("navph").style.left = d ? `${(t / d) * 100}%` : "0";
+}
+// 再生中に再生位置が表示の外へ出たら、次のページへ送る（Premiere のページスクロール）
+function followPlayhead() {
+  if (!V.span || video.paused || dragging || navDrag) return false;
+  const t = video.currentTime, sp = viewSpan();
+  if (t >= V.start && t <= V.start + sp) return false;
+  V.start = t - sp * 0.02;
+  drawTimeline();
+  return true;
+}
+
+function zoomAt(factor, anchor) {
+  const d = duration();
+  if (!d) return;
+  const sp = viewSpan(), nsp = Math.max(MIN_SPAN, Math.min(d, sp / factor));
+  if (anchor === undefined) {
+    const t = video.currentTime;
+    anchor = t >= V.start && t <= V.start + sp ? t : V.start + sp / 2;  // 再生位置が見えていればそこを中心に
+  }
+  const frac = (anchor - V.start) / sp;
+  V.span = nsp; V.start = anchor - frac * nsp;
+  drawTimeline();
+}
+function zoomFit() { V.span = 0; V.start = 0; drawTimeline(); }
+$("zIn").onclick = () => zoomAt(2);
+$("zOut").onclick = () => zoomAt(0.5);
+$("zFit").onclick = zoomFit;
+
+function tlTime(ev) { const r = tlBox.getBoundingClientRect(); return xToT(ev.clientX - r.left, r.width); }
+let dragging = false;
+tlBox.addEventListener("pointerdown", (e) => {
+  if (e.button !== 0) return;
+  dragging = true; tlBox.setPointerCapture(e.pointerId); userSeek(tlTime(e));
+});
+tlBox.addEventListener("pointermove", (e) => {
+  const r = tlBox.getBoundingClientRect(), tip = $("tip");
+  let t = tlTime(e);
+  if (dragging) {
+    // 端までドラッグしたら、表示も一緒に動かす
+    const edge = 24;
+    if (V.span && e.clientX - r.left < edge) { V.start -= viewSpan() * 0.02; drawTimeline(); }
+    else if (V.span && r.right - e.clientX < edge) { V.start += viewSpan() * 0.02; drawTimeline(); }
+    t = tlTime(e);
+    userSeek(t);
+  }
+  tip.style.display = duration() ? "block" : "none";
+  tip.style.left = `${e.clientX - r.left}px`;
+  const si = sentAt(t), s = S.sents[si], sp = viewSpan();
+  tip.textContent = fmtTick(t, sp <= 120 ? 0.1 : 1) + (s && t <= s.end + 1 ? `  ${s.text.slice(0, 24)}` : "");
+});
+tlBox.addEventListener("pointerup", () => { dragging = false; });
+tlBox.addEventListener("pointerleave", () => { $("tip").style.display = "none"; });
+tlBox.addEventListener("wheel", (e) => {
+  if (!duration()) return;
+  e.preventDefault();
+  const r = tlBox.getBoundingClientRect();
+  if (e.ctrlKey || e.altKey || e.metaKey) {
+    // Ctrl/Alt+ホイール（タッチパッドのピンチも）: マウスの位置を中心に拡大・縮小
+    zoomAt(Math.exp(-e.deltaY * 0.002), xToT(e.clientX - r.left, r.width));
+  } else if (V.span) {
+    const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+    V.start += (delta / r.width) * viewSpan();
+    drawTimeline();
+  }
+}, { passive: false });
+
+// 下のバー（全体の中で、今どこを表示しているか）
+let navDrag = null;
+nav.addEventListener("pointerdown", (e) => {
+  const d = duration();
+  if (!d || e.button !== 0) return;
+  const r = nav.getBoundingClientRect(), sp = viewSpan();
+  if (e.target === thumb || thumb.contains(e.target)) {
+    const mode = e.target.classList.contains("l") ? "l" : e.target.classList.contains("r") ? "r" : "move";
+    navDrag = { mode, x: e.clientX, start: V.start, end: V.start + sp, w: r.width };
+  } else {
+    // バーの空いている所を押したら、そこを中心に表示する
+    V.start = ((e.clientX - r.left) / r.width) * d - sp / 2;
+    drawTimeline();
+    navDrag = { mode: "move", x: e.clientX, start: V.start, end: V.start + sp, w: r.width };
+  }
+  thumb.classList.add("drag");
+  nav.setPointerCapture(e.pointerId);
+  e.preventDefault();
+});
+nav.addEventListener("pointermove", (e) => {
+  if (!navDrag) return;
+  const d = duration(), dt = ((e.clientX - navDrag.x) / navDrag.w) * d, g = navDrag;
+  if (g.mode === "move") { V.start = g.start + dt; }
+  else if (g.mode === "l") { const s0 = Math.max(0, Math.min(g.start + dt, g.end - MIN_SPAN)); V.start = s0; V.span = g.end - s0; }
+  else { const e1 = Math.min(d, Math.max(g.end + dt, g.start + MIN_SPAN)); V.start = g.start; V.span = e1 - g.start; }
+  drawTimeline();
+});
+const navUp = () => { navDrag = null; thumb.classList.remove("drag"); };
+nav.addEventListener("pointerup", navUp);
+nav.addEventListener("pointercancel", navUp);
+nav.addEventListener("dblclick", zoomFit);
+
+window.addEventListener("resize", drawTimeline);
+try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", drawTimeline); } catch (e) {}
+video.addEventListener("loadedmetadata", () => { rebuild(); });
+
+// ---------- 文字起こし一覧 ----------
+function esc(s) { return s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+function renderSents() {
+  const box = $("slist"), q = S.query;
+  if (!S.sents.length) { box.innerHTML = '<div class="hint">作業フォルダを読み込むと表示されます</div>'; $("hits").textContent = ""; return; }
+  const parts = [];
+  let hits = 0;
+  S.sents.forEach((s, i) => {
+    let text = esc(s.text);
+    if (q) {
+      if (!s.text.includes(q)) return;
+      hits++;
+      text = text.split(esc(q)).join(`<mark>${esc(q)}</mark>`);
+    }
+    parts.push(`<div class="srow" data-i="${i}"><span class="t">${fmt(s.start)}</span><span>${text}</span></div>`);
+  });
+  box.innerHTML = parts.join("") || '<div class="hint">見つかりませんでした</div>';
+  $("hits").textContent = q ? `${hits} 件` : `${S.sents.length} 文`;
+  S.lastSent = -2;
+}
+$("slist").addEventListener("click", (e) => {
+  const row = e.target.closest(".srow");
+  if (!row) return;
+  const s = S.sents[Number(row.dataset.i)];
+  userSeek(Math.max(0, s.start - S.set.pre));
+});
+$("search").addEventListener("input", (e) => { S.query = e.target.value.trim(); renderSents(); });
+
+// ---------- メモ ----------
+function saveMemos() { if (S.memoKey) store(S.memoKey, S.memos); $("mcount").textContent = S.memos.length ? `${S.memos.length} 件` : ""; drawTimeline(); }
+function renderMemos(focusIdx = -1) {
+  const box = $("mlist");
+  S.memos.sort((a, b) => a.t - b.t);
+  if (!S.memos.length) { box.innerHTML = '<div class="hint">再生中に M キーで、その場面にメモを付けられます</div>'; saveMemos(); return; }
+  box.innerHTML = "";
+  S.memos.forEach((m, i) => {
+    const row = document.createElement("div");
+    row.className = "mrow";
+    row.innerHTML = `<button class="jump" title="この場面へ">▶ ${fmt(m.t)}</button>
+      <input type="text" placeholder="メモ" value="${esc(m.note || "")}">
+      <button class="del" title="削除">✕</button>`;
+    row.querySelector(".jump").onclick = () => userSeek(m.t);
+    const inp = row.querySelector("input");
+    inp.oninput = () => { m.note = inp.value; saveMemos(); };
+    inp.onkeydown = (e) => { if (e.key === "Enter" || e.key === "Escape") { inp.blur(); e.preventDefault(); } };
+    row.querySelector(".del").onclick = () => { S.memos.splice(i, 1); renderMemos(); };
+    box.appendChild(row);
+    if (i === focusIdx) { inp.focus(); row.scrollIntoView({ block: "nearest" }); }
+  });
+  saveMemos();
+}
+function addMemo() {
+  if (!S.videoUrl) return;
+  const m = { t: Math.max(0, video.currentTime - S.set.memoBack), note: "" };
+  S.memos.push(m);
+  S.memos.sort((a, b) => a.t - b.t);
+  renderMemos(S.memos.indexOf(m));
+}
+function memoText() { return S.memos.map((m) => `${fmt(m.t)}\t${(m.note || "").replace(/\s+/g, " ")}`).join("\r\n") + "\r\n"; }
+function flash(msg) { $("mmsg").textContent = msg; setTimeout(() => { $("mmsg").textContent = ""; }, 2000); }
+$("btnAddMemo").onclick = addMemo;
+$("btnSave").onclick = () => {
+  if (!S.memos.length) return flash("メモがありません");
+  const base = S.videoName ? S.videoName.replace(/\.[^.]+$/, "") : "memo";
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob(["﻿" + memoText()], { type: "text/plain" }));
+  a.download = `${base}_memo.txt`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+$("btnCopy").onclick = async () => {
+  if (!S.memos.length) return flash("メモがありません");
+  try { await navigator.clipboard.writeText(memoText()); flash("コピーしました"); }
+  catch (e) { flash("コピーできませんでした"); }
+};
+$("btnLoadMemo").onclick = () => $("inMemo").click();
+$("inMemo").onchange = async (e) => {
+  const f = e.target.files[0];
+  if (!f) return;
+  let n = 0;
+  for (const line of (await f.text()).replace(/^﻿/, "").split(/\r?\n/)) {
+    const m = line.match(/^\s*(\d+(?::\d+){1,2}(?:\.\d+)?)\s*(.*)$/);
+    if (!m) continue;
+    const t = parseTime(m[1]);
+    if (t === null) continue;
+    S.memos.push({ t, note: m[2] });
+    n++;
+  }
+  renderMemos();
+  flash(`${n} 件読み込みました`);
+  e.target.value = "";
+};
+$("btnClear").onclick = () => {
+  if (S.memos.length && confirm(`メモ ${S.memos.length} 件を全部消します。よろしいですか？`)) { S.memos = []; renderMemos(); }
+};
+
+// ---------- 設定 ----------
+function applySettings() {
+  $("speechRate").value = String(S.set.speechRate);
+  $("silenceMode").value = String(S.set.silenceMode);
+  $("pre").value = S.set.pre; $("post").value = S.set.post;
+  $("silenceMin").value = S.set.silenceMin; $("memoBack").value = S.set.memoBack;
+  $("follow").checked = S.set.follow; $("volume").value = S.set.volume;
+  video.volume = audio.volume = S.set.volume;
+}
+function saveSettings() { store("viewer:settings", S.set); updateStats(); }
+Object.assign(S.set, load("viewer:settings") || {});
+applySettings();
+$("speechRate").onchange = (e) => { S.set.speechRate = Number(e.target.value); saveSettings(); };
+$("silenceMode").onchange = (e) => { S.set.silenceMode = e.target.value; saveSettings(); };
+for (const k of ["pre", "post", "silenceMin"]) {
+  $(k).onchange = (e) => { const v = Number(e.target.value); if (v >= 0) { S.set[k] = v; saveSettings(); rebuild(); } };
+}
+$("memoBack").onchange = (e) => { const v = Number(e.target.value); if (v >= 0) { S.set.memoBack = v; saveSettings(); } };
+$("follow").onchange = (e) => { S.set.follow = e.target.checked; saveSettings(); };
+$("volume").oninput = (e) => { S.set.volume = Number(e.target.value); video.volume = audio.volume = S.set.volume; saveSettings(); };
+$("btnReset").onclick = () => { const v = S.set.volume; S.set = { ...DEF, volume: v }; applySettings(); saveSettings(); rebuild(); };
+
+// ---------- 操作 ----------
+function togglePlay() {
+  if (!S.videoUrl) return;
+  if (video.paused) video.play().catch(() => {}); else video.pause();
+}
+$("btnPlay").onclick = togglePlay;
+video.addEventListener("click", togglePlay);
+$("btnVideo").onclick = () => $("inVideo").click();
+$("btnFolder").onclick = () => $("inFolder").click();
+$("inVideo").onchange = (e) => { if (e.target.files.length) ingest([...e.target.files]); e.target.value = ""; };
+$("inFolder").onchange = (e) => { if (e.target.files.length) ingest([...e.target.files]); e.target.value = ""; };
+$("btnHelp").onclick = () => $("help").classList.toggle("on");
+
+let dragDepth = 0;
+window.addEventListener("dragenter", (e) => { e.preventDefault(); dragDepth++; $("drop").classList.add("on"); });
+window.addEventListener("dragleave", () => { if (--dragDepth <= 0) { dragDepth = 0; $("drop").classList.remove("on"); } });
+window.addEventListener("dragover", (e) => e.preventDefault());
+window.addEventListener("drop", async (e) => {
+  e.preventDefault(); dragDepth = 0; $("drop").classList.remove("on");
+  const r = await filesFromDrop(e.dataTransfer);
+  ingest(r.files, r.dirFailed);
+});
+
+const RATES = [0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3];
+const MODES = ["skip", "1", "2", "3", "4", "6", "8", "16"];
+function jumpSpeech(dir) {
+  const t = video.currentTime, R = S.regions;
+  if (dir > 0) { const r = R.find((x) => x.sp && x.s > t + 0.05); if (r) userSeek(r.s); }
+  else {
+    const i = regionAt(t);
+    const cand = R.filter((x, j) => x.sp && (x.s < t - 1.0 || (j < i)));
+    const r = cand[cand.length - 1];
+    if (r) userSeek(r.s);
+  }
+}
+document.addEventListener("keydown", (e) => {
+  const tag = (e.target.tagName || "").toLowerCase();
+  if (tag === "input" || tag === "textarea" || tag === "select") {
+    if (e.key === "Escape") e.target.blur();
+    return;
+  }
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  const k = e.key;
+  if (k === " ") { togglePlay(); }
+  else if (k === "ArrowRight") { e.shiftKey ? jumpSpeech(1) : userSeek(video.currentTime + 5); }
+  else if (k === "ArrowLeft") { e.shiftKey ? jumpSpeech(-1) : userSeek(video.currentTime - 5); }
+  else if (k === "ArrowUp" || k === "ArrowDown") {
+    const i = RATES.indexOf(S.set.speechRate), j = Math.max(0, Math.min(RATES.length - 1, (i < 0 ? 1 : i) + (k === "ArrowUp" ? 1 : -1)));
+    S.set.speechRate = RATES[j]; applySettings(); saveSettings();
+  }
+  else if (k === "s" || k === "S") {
+    S.set.silenceMode = MODES[(MODES.indexOf(String(S.set.silenceMode)) + 1) % MODES.length]; applySettings(); saveSettings();
+  }
+  else if (k === "m" || k === "M") { addMemo(); }
+  else if (k === "/") { $("search").focus(); }
+  else if (k === "?") { $("help").classList.toggle("on"); }
+  else if (k === "+" || k === "=" || k === "^" || k === ";") { zoomAt(2); }
+  else if (k === "-") { zoomAt(0.5); }
+  else if (k === "\\" || k === "¥" || k === "_") { zoomFit(); }
+  else return;
+  e.preventDefault();
+});
+drawTimeline();
+
+// ---------- 準備アプリが作ったページなら、動画と文字起こしを最初から読み込む ----------
+// （<動画名>_edit\ビューワで開く.html には、文字起こしと動画の場所が書き込まれている）
+(function preload() {
+  const el = document.getElementById("preload");
+  if (!el) return;
+  let P;
+  try { P = JSON.parse(el.textContent); } catch (e) { return; }
+  S.data = P.data;
+  S.sents = (P.data && P.data.sentences) || [];
+  const abs = (u) => new URL(u, location.href).href;  // video.src と比べられるように絶対 URL にする
+  S.audioUrl = P.data && P.data.audio ? abs(P.data.audio) : null;
+  S.videoName = P.videoName;
+  S.videoUrl = abs(P.video);
+  S.preloaded = true;
+  video.addEventListener("error", () => {
+    if (video.src !== S.videoUrl) return;
+    $("files").textContent = `動画「${P.videoName}」を開けませんでした（移動・名前の変更をしましたか？）。「動画を選ぶ」で選んでください`;
+    $("empty").hidden = false;
+  }, { once: true });
+  setup();
+})();
+</script>
+</body>
+</html>
