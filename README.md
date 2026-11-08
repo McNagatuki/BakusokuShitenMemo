@@ -95,14 +95,13 @@ Windows で exe を実行するだけで使えます。
 
 | ファイル | 役割 |
 | --- | --- |
-| `app.py` | 準備画面（tkinter）。版（`VERSION`）と表示名（`APP_TITLE`）もここで決める |
-| `prepare_win.py` | 準備の本体。動画から音声を取り出す → 切り分ける → speech.cpp で文字起こし → 文に区切る → `<動画名>_edit` に書き出す。コマンドラインでも動く |
-| `viewer.html` | ビューワ。準備の最後に、これに動画の場所と文字起こしを埋め込んだ `ビューワで開く.html` を作る |
+| `src/app.py` | 準備画面（tkinter）。版（`VERSION`）と表示名（`APP_TITLE`）もここで決める |
+| `src/prepare_win.py` | 準備の本体。動画から音声を取り出す → 切り分ける → speech.cpp で文字起こし → 文に区切る → `<動画名>_edit` に書き出す。コマンドラインでも動く |
+| `src/viewer.html` | ビューワ。準備の最後に、これに動画の場所と文字起こしを埋め込んだ `ビューワで開く.html` を作る |
 | `build.ps1` | 配布用フォルダと zip を作る |
 | `使い方.txt` | 配布物に入れる説明書。この README の「すごいところ」「使い方」と同じ内容なので、片方を直したらもう片方も直す |
 | `THIRD_PARTY_NOTICES.txt` | 同梱しているソフトウェアとモデルのライセンス一覧 |
 | `tools/start_sandbox.ps1` | 配布物を Windows サンドボックス（GPU・ネットなし）で試す |
-| `docs/handoff_windows_viewer.md` | 引き継ぎメモ（構成、決めたことの理由、検証結果、残っていること） |
 
 ---
 
@@ -113,9 +112,9 @@ Windows で exe を実行するだけで使えます。
 必要なもの: Python 3.10 以上、numpy、PATH の通った ffmpeg / ffprobe / speech（speech.cpp）
 
 ```powershell
-python app.py                                   # 画面
-python prepare_win.py 動画.mp4 --limit 300      # コマンドライン（先頭 5 分だけ）
-python prepare_win.py 動画.mp4 --device cpu     # CPU だけで
+python src\app.py                               # 画面
+python src\prepare_win.py 動画.mp4 --limit 300  # コマンドライン（先頭 5 分だけ）
+python src\prepare_win.py 動画.mp4 --device cpu # CPU だけで
 ```
 
 ### 配布物を作る
@@ -127,7 +126,7 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1
 `dist\ShitenMemo\`（そのまま配れるフォルダ）と `dist\ShitenMemo-<版>.zip` ができます。
 Python のパッケージは `build_cache\venv` に入れるので、普段の Python 環境は変わりません。
 ffmpeg のダウンロードに失敗し続けるときは、前に使った zip を `-FfmpegZip` で指定できます。
-版を上げるときは `app.py` の `VERSION` を変えます。
+版を上げるときは `src\app.py` の `VERSION` を変えます。
 
 ### 配布前の確認
 
@@ -143,7 +142,7 @@ ffmpeg のダウンロードに失敗し続けるときは、前に使った zip
 
 ## License
 
-このリポジトリのコード（`app.py`、`prepare_win.py`、`viewer.html`、`build.ps1` など）のライセンスは未定です（決めるまでは作者が権利を持ちます）。
+このリポジトリのコード（`src\` の `app.py`・`prepare_win.py`・`viewer.html`、`build.ps1` など）のライセンスは未定です（決めるまでは作者が権利を持ちます）。
 
 配布物（`dist\ShitenMemo\`）には、次のソフトウェアとモデルを同梱しています。これらはそれぞれのライセンスに従います。
 ライセンス文は配布物の `licenses\` に、一覧は [THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt) にあります。

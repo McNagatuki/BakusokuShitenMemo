@@ -26,8 +26,9 @@ $Cache = Join-Path $Root "build_cache"
 # PyInstaller の作業フォルダ。ここにも ShitenMemo.exe ができるが、単体では動かない中間物なので目に付かない所に置く
 $Work = Join-Path $Cache "pyinstaller"
 $Lic = Join-Path $Dist "licenses"
-$Version = ([regex]::Match((Get-Content -Raw -Encoding UTF8 (Join-Path $Root "app.py")), 'VERSION = "([0-9.]+)"')).Groups[1].Value
-$Title = ([regex]::Match((Get-Content -Raw -Encoding UTF8 (Join-Path $Root "app.py")), 'APP_TITLE = "([^"]+)"')).Groups[1].Value
+$Src = Join-Path $Root "src"   # app.py / prepare_win.py / viewer.html
+$Version = ([regex]::Match((Get-Content -Raw -Encoding UTF8 (Join-Path $Src "app.py")), 'VERSION = "([0-9.]+)"')).Groups[1].Value
+$Title = ([regex]::Match((Get-Content -Raw -Encoding UTF8 (Join-Path $Src "app.py")), 'APP_TITLE = "([^"]+)"')).Groups[1].Value
 if (-not $Version) { throw "app.py に VERSION がありません" }
 New-Item -ItemType Directory -Force $Cache | Out-Null
 
@@ -59,8 +60,8 @@ function Download($uri, $out, [int]$tries = 4) {
 }
 function MB($path) { "{0:N0} MB" -f ((Get-ChildItem $path -Recurse -File | Measure-Object Length -Sum).Sum / 1MB) }
 
-foreach ($f in "app.py", "prepare_win.py", "viewer.html", "THIRD_PARTY_NOTICES.txt", "使い方.txt") {
-    if (-not (Test-Path (Join-Path $Root $f))) { throw "$f がこのフォルダにありません" }
+foreach ($f in "src\app.py", "src\prepare_win.py", "src\viewer.html", "THIRD_PARTY_NOTICES.txt", "使い方.txt") {
+    if (-not (Test-Path (Join-Path $Root $f))) { throw "$f がありません" }
 }
 
 # ---------------------------------------------------------------- Python → exe
@@ -110,9 +111,9 @@ VSVersionInfo(
 & $Py -m PyInstaller --noconfirm --clean --log-level WARN --windowed --noupx --version-file $VerFile `
     --name $Name --distpath $DistRoot --workpath $Work --specpath $Work `
     --collect-all tkinterdnd2 --hidden-import prepare_win `
-    (Join-Path $Root "app.py")
+    (Join-Path $Src "app.py")
 if ($LASTEXITCODE -ne 0) { throw "PyInstaller に失敗しました" }
-Copy-Item (Join-Path $Root "viewer.html") $Dist
+Copy-Item (Join-Path $Src "viewer.html") $Dist
 Copy-Item (Join-Path $Root "使い方.txt") $Dist
 New-Item -ItemType Directory -Force $Lic | Out-Null
 Copy-Item (Join-Path $Root "THIRD_PARTY_NOTICES.txt") $Lic
