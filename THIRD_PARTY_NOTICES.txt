@@ -39,3 +39,8 @@
   NumPy: BSD 3-Clause License  https://numpy.org/
   tkinterdnd2 / tkdnd: MIT License / BSD スタイル  https://github.com/Eliav2/tkinterdnd2
   PyInstaller: GPL v2 以降（作った exe はどんな条件でも配布してよいという例外つき）  https://pyinstaller.org/
+
+■ 参考にしたソフト（コードは含みません）
+  viewer.html の時刻つきメモ（一覧・txt 保存・コピー・読み込み）は、次のソフトを参考に作りました。
+  Web Media Player with Annotations  https://github.com/TACOWASA059/mediaplayer_v2.github.io
+  ライセンス: MIT License  Copyright (c) 2026 TACOWASA059

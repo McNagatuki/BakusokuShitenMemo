@@ -143,7 +143,7 @@ ffmpeg のダウンロードに失敗し続けるときは、前に使った zip
 
 ## License
 
-このリポジトリのコード（`app.py`、`prepare_win.py`、`viewer.html`、`build.ps1` など）のライセンスは現時点で未定です。
+このリポジトリのコード（`app.py`、`prepare_win.py`、`viewer.html`、`build.ps1` など）のライセンスは未定です（決めるまでは作者が権利を持ちます）。
 
 配布物（`dist\ShitenMemo\`）には、次のソフトウェアとモデルを同梱しています。これらはそれぞれのライセンスに従います。
 ライセンス文は配布物の `licenses\` に、一覧は [THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt) にあります。
@@ -155,3 +155,5 @@ ffmpeg のダウンロードに失敗し続けるときは、前に使った zip
 | [FFmpeg](https://ffmpeg.org/)（LGPL 版のビルド、改変なし） | LGPL-2.1 以降 |
 | [Vulkan Loader](https://github.com/KhronosGroup/Vulkan-Loader) | Apache-2.0 |
 | Python / NumPy / tkinterdnd2 / PyInstaller | PSF / BSD-3-Clause / MIT / GPL-2.0 以降（配布を認める例外つき） |
+
+ビューワの時刻つきメモ（一覧・txt 保存・コピー・読み込み）は、[Web Media Player with Annotations](https://github.com/TACOWASA059/mediaplayer_v2.github.io)（MIT License, Copyright (c) 2026 TACOWASA059）を参考に作りました。
