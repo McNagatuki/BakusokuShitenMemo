@@ -190,8 +190,8 @@ class App:
             items.append(f"トラック {i}（{ch}）" + (f"  {t['name']}" if t["name"] else "")
                          + ("  ← 動画を見るときに鳴る音" if i == 1 and n > 1 else ""))
         self.cb_track.configure(values=items, state="readonly")
-        want = self.settings.get("voice_track", 2)
-        self.cb_track.current((want if 1 <= want <= n else (2 if n >= 2 else 1)) - 1)
+        want = self.settings.get("voice_track", 1)  # 初めては 1 本目。前回選んだトラックがあればそれ
+        self.cb_track.current((want if 1 <= want <= n else 1) - 1)
         self.btn_run.configure(state="normal")
 
         done = os.path.exists(os.path.join(core.work_dir(path), "viewer_data.json"))

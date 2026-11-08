@@ -3,7 +3,7 @@
 画面（app.py）からも、コマンドラインからも使う。
 
   python prepare_win.py 動画.mp4
-  python prepare_win.py 動画.mp4 --voice-tracks 2 --device cpu --limit 300   # 先頭5分だけ CPU で試す
+  python prepare_win.py 動画.mp4 --voice-tracks 2 --device cpu --limit 300   # 2 本目を、先頭5分だけ CPU で試す
 
 出力（動画と同じ場所の <動画名>_edit フォルダ）:
   viewer_data.json                      … viewer.html に読み込ませる
@@ -54,7 +54,7 @@ class Cancelled(Exception):
 @dataclasses.dataclass
 class Options:
     input: str
-    voice_tracks: list = dataclasses.field(default_factory=lambda: [2])
+    voice_tracks: list = dataclasses.field(default_factory=lambda: [1])
     viewer_audio: object = "video"  # "video" / "all" / [1, 3]
     device: str = "auto"            # auto / cpu / gpu
     threads: int = 0
@@ -533,7 +533,7 @@ def parse_tracks(s):
 def main():
     ap = argparse.ArgumentParser(description="無音スキップビューワ用の準備（speech.cpp 版）")
     ap.add_argument("input", help="動画ファイル")
-    ap.add_argument("--voice-tracks", default="2", help="文字起こしに使う音声トラック。例: 2 / 2,3（既定 2）")
+    ap.add_argument("--voice-tracks", default="1", help="文字起こしに使う音声トラック。例: 2 / 2,3（既定 1）")
     ap.add_argument("--viewer-audio", default="video", help="ビューワで鳴らす音声: video / all / 1,3（既定 video）")
     ap.add_argument("--device", default="auto", help="auto（GPU があれば GPU、だめなら CPU）/ cpu / gpu")
     ap.add_argument("--threads", type=int, default=0, help="CPU のスレッド数（既定は speech.cpp に任せる）")
