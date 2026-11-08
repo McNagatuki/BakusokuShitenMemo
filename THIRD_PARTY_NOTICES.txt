@@ -1,0 +1,41 @@
+﻿このソフトに含まれる第三者のソフトウェアとモデル
+====================================================
+
+このソフト本体（ShitenMemo.exe と viewer.html）のほかに、次のものを同梱しています。
+それぞれのライセンス文は、この licenses フォルダに入っています。
+
+■ speech.cpp（音声認識の実行エンジン）  bin\speech\
+  ライセンス: MIT License（同梱の ggml も MIT License）
+  https://github.com/nyosegawa/speech.cpp
+  ライセンス文: licenses\speech.cpp\
+
+■ 音声認識モデル Haas-ja-v1.0（third-intelligence）  models\
+  ライセンス: Apache License 2.0
+  https://huggingface.co/third-intelligence/Haas-ja-v1.0
+  同梱しているのは、元の重みを speech.cpp 用の GGUF 形式（Q8_0 量子化）に変換したもの
+  （Haas-616M-ja-v1.0-Q8_0.gguf、https://huggingface.co/sakasegawa/Haas-ja-v1.0-GGUF）です。
+  ライセンス文: licenses\Apache-2.0.txt
+  Haas-ja-v1.0 は NVIDIA の Parakeet-TDT（parakeet-tdt-0.6b-v2、CC-BY-4.0）を土台にしたモデルです。
+  Parakeet-TDT: Copyright NVIDIA Corporation, https://huggingface.co/nvidia/parakeet-tdt-0.6b-v2
+  （CC-BY-4.0: https://creativecommons.org/licenses/by/4.0/）
+  「Haas」の名前は Third Intelligence のもので、このソフトの名前には使っていません。
+
+■ FFmpeg（動画から音声を取り出す）  bin\ffmpeg\
+  ライセンス: GNU Lesser General Public License (LGPL) version 2.1 以降
+  https://ffmpeg.org/
+  同梱しているのは BtbN 氏が配布している LGPL 版のビルド（win64-lgpl-shared）で、改変していません。
+  同梱した版のソースコード: licenses\FFmpeg_source.txt に書いてあるコミットのものです。
+  ほかの方法で入手したい場合は、このソフトを配布した人に連絡してください。
+  ビルド手順: https://github.com/BtbN/FFmpeg-Builds
+  ビルドの設定: licenses\FFmpeg_build.txt   ライセンス文: licenses\FFmpeg_LICENSE.txt
+
+■ Vulkan Loader（GPU ドライバの無い PC 用の予備）  bin\vulkan_fallback\
+  ライセンス: Apache License 2.0
+  https://github.com/KhronosGroup/Vulkan-Loader
+  ライセンス文: licenses\Apache-2.0.txt
+
+■ Python と、exe に含まれるライブラリ  _internal\
+  Python: Python Software Foundation License  https://docs.python.org/3/license.html
+  NumPy: BSD 3-Clause License  https://numpy.org/
+  tkinterdnd2 / tkdnd: MIT License / BSD スタイル  https://github.com/Eliav2/tkinterdnd2
+  PyInstaller: GPL v2 以降（作った exe はどんな条件でも配布してよいという例外つき）  https://pyinstaller.org/

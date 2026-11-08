@@ -99,6 +99,7 @@ Windows で exe を実行するだけで使えます。
 | `prepare_win.py` | 準備の本体。動画から音声を取り出す → 切り分ける → speech.cpp で文字起こし → 文に区切る → `<動画名>_edit` に書き出す。コマンドラインでも動く |
 | `viewer.html` | ビューワ。準備の最後に、これに動画の場所と文字起こしを埋め込んだ `ビューワで開く.html` を作る |
 | `build.ps1` | 配布用フォルダと zip を作る |
+| `使い方.txt` | 配布物に入れる説明書。この README の「すごいところ」「使い方」と同じ内容なので、片方を直したらもう片方も直す |
 | `THIRD_PARTY_NOTICES.txt` | 同梱しているソフトウェアとモデルのライセンス一覧 |
 | `tools/start_sandbox.ps1` | 配布物を Windows サンドボックス（GPU・ネットなし）で試す |
 | `docs/handoff_windows_viewer.md` | 引き継ぎメモ（構成、決めたことの理由、検証結果、残っていること） |
@@ -153,4 +154,4 @@ ffmpeg のダウンロードに失敗し続けるときは、前に使った zip
 | 音声認識モデル [Haas-ja-v1.0](https://huggingface.co/third-intelligence/Haas-ja-v1.0)（[GGUF 版](https://huggingface.co/sakasegawa/Haas-ja-v1.0-GGUF)） | Apache-2.0 |
 | [FFmpeg](https://ffmpeg.org/)（LGPL 版のビルド、改変なし） | LGPL-2.1 以降 |
 | [Vulkan Loader](https://github.com/KhronosGroup/Vulkan-Loader) | Apache-2.0 |
-| Python / NumPy / tkinterdnd2 / PyInstaller | PSF / BSD-3-Clause / MIT / GPL2.0（配布を認める例外つき） |
+| Python / NumPy / tkinterdnd2 / PyInstaller | PSF / BSD-3-Clause / MIT / GPL-2.0 以降（配布を認める例外つき） |
