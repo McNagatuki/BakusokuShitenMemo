@@ -133,6 +133,7 @@ section.pane { display: flex; flex-direction: column; min-height: 0; border-bott
           <option value="0.75">0.75倍</option><option value="1">1倍</option><option value="1.25">1.25倍</option>
           <option value="1.5">1.5倍</option><option value="1.75">1.75倍</option><option value="2">2倍</option>
           <option value="2.5">2.5倍</option><option value="3">3倍</option>
+          <option value="3.5">3.5倍</option><option value="4">4倍</option>
         </select>
       </div>
       <div class="group">
@@ -219,7 +220,7 @@ section.pane { display: flex; flex-direction: column; min-height: 0; border-bott
 "use strict";
 const $ = (id) => document.getElementById(id);
 const video = $("video"), audio = $("audio");
-const DEF = { speechRate: 1, silenceMode: "skip", pre: 0.15, post: 0.25, silenceMin: 1.5, memoBack: 2, follow: true, volume: 1 };
+const DEF = { speechRate: 1, silenceMode: "4", pre: 0.15, post: 0.25, silenceMin: 1.5, memoBack: 2, follow: true, volume: 1 };
 const S = {
   set: { ...DEF }, videoName: null, data: null, audioUrl: null, videoUrl: null,
   sents: [], regions: [], memos: [], override: -1, lastSent: -1, query: "", memoKey: null,
@@ -777,7 +778,7 @@ window.addEventListener("drop", async (e) => {
   ingest(r.files, r.dirFailed);
 });
 
-const RATES = [0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3];
+const RATES = [0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 3.5, 4];
 const MODES = ["skip", "1", "2", "3", "4", "6", "8", "16"];
 function jumpSpeech(dir) {
   const t = video.currentTime, R = S.regions;
