@@ -1,0 +1,5 @@
+* text=auto
+# Windows のツールで扱うファイルは CRLF のまま
+*.ps1 text eol=crlf
+*.txt text eol=crlf
+*.wsb text eol=crlf

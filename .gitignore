@@ -1,0 +1,29 @@
+# ビルドの生成物
+build/
+build_cache/
+dist/
+__pycache__/
+*.pyc
+*.spec
+
+# 試験に使う動画・音声と、その準備結果（大きい・個人的な内容を含む）
+*.mp4
+*.mov
+*.mkv
+*.m4v
+*.webm
+*.wav
+*.m4a
+*_edit/
+sandbox_test/
+
+# 検証の出力（tokens.json、test60_cpu.json など）
+*.json
+*.zip
+*.gguf
+
+# エディタ・OS
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
